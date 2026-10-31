@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mesh-engine": {
+      "command": "build/native/Release/MeshEngine.exe",
+      "args": ["--mcp"]
+    }
+  }
+}

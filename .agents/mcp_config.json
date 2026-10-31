@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mesh-engine": {
+      "command": "C:\\Users\\Nicol\\Documents\\Github\\browser\\build\\native\\Release\\MeshEngine.exe",
+      "args": [
+        "--mcp"
+      ]
+    }
+  }
+}

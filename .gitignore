@@ -1,0 +1,49 @@
+# Build
+/build/
+/build-linux/
+/build-tests/
+/build-linux-tests/
+/out/
+/cmake-build-*/
+
+# CEF binary distribution (downloaded)
+/third_party/cef/
+/third_party/cef-linux64/
+/third_party/cef-linuxarm64/
+/third_party/cef-windows64/
+/third_party/cef_binary_*.tar.bz2
+/third_party/cef_binary_*.tar.xz
+/third_party/*.tar.bz2
+
+# IDE / OS
+.vs/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Runtime / local
+*.log
+*.db
+.env
+.env.*
+!.env.example
+
+# Workers
+workers/**/node_modules/
+workers/**/.wrangler/
+workers/**/.wrangler-out/
+workers/**/dist/
+workers/**/.dev.vars
+
+# Rust (adblock-rust FFI)
+native/adblock_ffi/target/
+**/adblock_ffi_target/
+
+# UI packaging artifacts (local copies of the tracked ui/ tree)
+/ui/*.zip
+
+# React UI toolchain
+/node_modules/
+/ui/js/generated/

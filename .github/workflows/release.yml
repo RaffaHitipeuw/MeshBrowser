@@ -1,0 +1,162 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v0.2.0)'
+        required: false
+        default: ''
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install UI dependencies
+        run: npm ci
+
+      - name: Build the React UI bundles
+        run: npm run build:ui
+
+      - name: Verify the generated UI bundles
+        shell: powershell
+        run: |
+          $Required = @("shell", "overlay", "bookmarks", "history", "downloads", "settings", "info")
+          foreach ($Name in $Required) {
+            $Bundle = "ui/js/generated/$Name.js"
+            if (-not (Test-Path $Bundle)) { throw "UI bundle $Bundle was not built." }
+            if ((Get-Item $Bundle).Length -eq 0) { throw "UI bundle $Bundle is empty." }
+            Write-Host ("{0}: {1} bytes" -f $Bundle, (Get-Item $Bundle).Length)
+          }
+
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
+
+      - name: Set up Visual Studio developer command prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Download & Extract CEF
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/download_cef.ps1
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Mesh Engine
+        run: |
+          cmake --build build --config Release
+
+      - name: Prepare Release Artifacts & Changelog
+        shell: powershell
+        env:
+          RELEASE_VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          $ProjectVersion = (Select-String -Path "CMakeLists.txt" -Pattern '^project\(MeshEngine VERSION ([0-9]+\.[0-9]+\.[0-9]+)' | Select-Object -First 1).Matches.Groups[1].Value
+          if (-not $ProjectVersion) { throw "Could not read the project version from CMakeLists.txt" }
+
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $Version = $env:GITHUB_REF_NAME
+          } elseif ($env:RELEASE_VERSION_INPUT) {
+            $Version = $env:RELEASE_VERSION_INPUT.Trim()
+          } else {
+            $Version = "v$ProjectVersion"
+          }
+          if ($Version -notmatch '^v?[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Invalid release version '$Version'. Expected vMAJOR.MINOR.PATCH."
+          }
+          if (-not $Version.StartsWith("v")) { $Version = "v$Version" }
+          if ($Version.Substring(1) -ne $ProjectVersion) {
+            throw "Release tag $Version does not match CMake project version $ProjectVersion."
+          }
+
+          $ReleaseDir = "build/native/Release"
+          $ZipName = "MeshEngine-$Version-windows-x64.zip"
+          $NotesFile = "release_notes.md"
+          
+          # Verify the executable was produced
+          if (-not (Test-Path "$ReleaseDir/MeshEngine.exe")) {
+            throw "Build output MeshEngine.exe was not found in $ReleaseDir"
+          }
+
+          # Ensure UI assets are bundled even if the build's post-build copy was skipped.
+          if (-not (Test-Path "$ReleaseDir/ui/index.html")) {
+            New-Item -ItemType Directory -Force -Path "$ReleaseDir/ui" | Out-Null
+            Copy-Item -Path "ui/*" -Destination "$ReleaseDir/ui" -Recurse -Force
+          }
+          if (-not (Test-Path "$ReleaseDir/ui/overlay.html")) { throw "Overlay UI assets are missing from the release package." }
+          if (-not (Test-Path "$ReleaseDir/ui/js/generated/shell.js")) { throw "The generated UI bundles are missing from the release package." }
+
+          Write-Host "Compressing $ReleaseDir into $ZipName..."
+          Compress-Archive -Path "$ReleaseDir/*" -DestinationPath $ZipName -Force
+          Write-Host "Archive created: $ZipName"
+
+          $Checksum = (Get-FileHash -Path $ZipName -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "$ZipName.sha256" -Value "$Checksum  $ZipName" -Encoding ascii
+
+          # Extract matching version section from CHANGELOG.md
+          $CleanVersion = $Version -replace '^v', ''
+          $ChangelogFile = "CHANGELOG.md"
+          if (Test-Path $ChangelogFile) {
+            $Content = Get-Content -Path $ChangelogFile -Raw
+            $Escaped = [regex]::Escape($CleanVersion)
+            $Pattern = "(?s)##\s+\[?v?$Escaped\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##\s+\[|\Z)"
+            if ($Content -match $Pattern) {
+              $Notes = $matches[1].Trim()
+              Write-Host "Extracted changelog notes for version $Version"
+              Set-Content -Path $NotesFile -Value $Notes -Encoding utf8
+            } else {
+              Write-Warning "Could not find version $Version in $ChangelogFile. Using fallback."
+              Set-Content -Path $NotesFile -Value "Release $Version of Mesh Engine." -Encoding utf8
+            }
+          } else {
+            Set-Content -Path $NotesFile -Value "Release $Version of Mesh Engine." -Encoding utf8
+          }
+
+          echo "RELEASE_ZIP=$ZipName" >> $env:GITHUB_ENV
+          echo "RELEASE_TAG=$Version" >> $env:GITHUB_ENV
+          echo "RELEASE_NOTES_FILE=$NotesFile" >> $env:GITHUB_ENV
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Mesh Engine ${{ env.RELEASE_TAG }}
+          body_path: ${{ env.RELEASE_NOTES_FILE }}
+          files: |
+            ${{ env.RELEASE_ZIP }}
+            ${{ env.RELEASE_ZIP }}.sha256
+          draft: false
+          prerelease: false

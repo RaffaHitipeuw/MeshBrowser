@@ -1,0 +1,59 @@
+cmake_minimum_required(VERSION 3.21)
+
+set(CMAKE_CONFIGURATION_TYPES Debug Release)
+project(MeshEngine VERSION 0.1.5 LANGUAGES C CXX)
+
+# CEF binary flags pin MSVC to /std:c++17 for targets.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# CEF sandbox complicates packaging (bootstrap DLL). v1 builds a plain EXE.
+set(USE_SANDBOX OFF CACHE BOOL "Enable CEF sandbox" FORCE)
+
+# Unit tests for the engine logic that does not depend on CEF.
+option(MESH_BUILD_TESTS "Build the CEF-free engine unit tests" ON)
+
+if(NOT DEFINED CEF_ROOT)
+  if(WIN32)
+    set(_mesh_cef_candidates
+      "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef"
+      "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef-windows64")
+  else()
+    set(_mesh_cef_candidates
+      "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef-linux64"
+      "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef-linuxarm64"
+      "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cef")
+  endif()
+  foreach(_mesh_cef_dir IN LISTS _mesh_cef_candidates)
+    if(EXISTS "${_mesh_cef_dir}/cmake/FindCEF.cmake")
+      set(CEF_ROOT "${_mesh_cef_dir}")
+      break()
+    endif()
+  endforeach()
+endif()
+if(NOT CEF_ROOT OR NOT EXISTS "${CEF_ROOT}/cmake/FindCEF.cmake")
+  if(WIN32)
+    message(FATAL_ERROR
+      "CEF not found under third_party/cef.\n"
+      "Run: powershell -ExecutionPolicy Bypass -File scripts/download_cef.ps1")
+  else()
+    message(FATAL_ERROR
+      "CEF not found under third_party/cef-linux64.\n"
+      "Run: bash scripts/download_cef.sh")
+  endif()
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
+find_package(CEF REQUIRED)
+
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+add_subdirectory(native)
+
+if(MESH_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(native/tests)
+endif()
+
+PRINT_CEF_CONFIG()

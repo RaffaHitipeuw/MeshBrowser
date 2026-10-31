@@ -1,0 +1,153 @@
+#include "mesh/api/api_access.h"
+
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
+
+#include "include/cef_parser.h"
+#include "mesh/mesh_handler.h"
+#include "mesh/paths.h"
+#include "mesh/utf8.h"
+
+namespace mesh {
+namespace {
+
+std::string NormalizeFileUrlKey(const std::string& url) {
+  if (url.rfind("file:", 0) != 0) {
+    return {};
+  }
+  CefURLParts parts;
+  if (!CefParseURL(url, parts)) {
+    return {};
+  }
+  std::string path = CefString(&parts.path).ToString();
+  if (path.empty()) {
+    return {};
+  }
+  path = CefString(CefURIDecode(path, true, static_cast<cef_uri_unescape_rule_t>(
+                                              UU_SPACES | UU_PATH_SEPARATORS)))
+             .ToString();
+  if (path.size() >= 3 && path[0] == '/' && std::isalpha(static_cast<unsigned char>(path[1])) &&
+      path[2] == ':') {
+    path.erase(0, 1);
+  }
+  std::error_code ec;
+  const auto canonical = std::filesystem::weakly_canonical(
+      std::filesystem::path(utf8::Widen(path)), ec);
+  if (ec) {
+    return {};
+  }
+  std::string native = utf8::Narrow(canonical.wstring());
+  std::transform(native.begin(), native.end(), native.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return native;
+}
+
+bool PathUnderUiRoot(const std::string& file_url) {
+  const std::string path_key = NormalizeFileUrlKey(file_url);
+  if (path_key.empty()) {
+    return false;
+  }
+  std::error_code ec;
+  const auto root = std::filesystem::weakly_canonical(
+      std::filesystem::path(utf8::Widen(paths::UiRootDir())), ec);
+  if (ec) {
+    return false;
+  }
+  std::string root_key = utf8::Narrow(root.wstring());
+  std::transform(root_key.begin(), root_key.end(), root_key.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (path_key.size() < root_key.size()) {
+    return false;
+  }
+  if (path_key.compare(0, root_key.size(), root_key) != 0) {
+    return false;
+  }
+  if (path_key.size() == root_key.size()) {
+    return true;
+  }
+  const char next = path_key[root_key.size()];
+  return next == '\\' || next == '/';
+}
+
+bool IsWebContentAllowedMethod(std::string_view method) {
+  return method == "browser.media" || method == "browser.audio" ||
+         method == "browser.adblock.classId" || method == "agent.callback";
+}
+
+bool IsTrustedUiAllowedMethod(std::string_view method) {
+  return method.rfind("history.", 0) == 0 ||
+         method.rfind("bookmarks.", 0) == 0 ||
+         method.rfind("downloads.", 0) == 0 ||
+         method.rfind("session.", 0) == 0 || method.rfind("tabs.", 0) == 0 ||
+         method.rfind("settings.", 0) == 0 ||
+         method.rfind("plugins.", 0) == 0 ||
+         method.rfind("agent.", 0) == 0 ||
+         method.rfind("page.", 0) == 0 ||
+         method == "app.installUpdate" ||
+         method == "api.list" ||
+         method == "browser.navigate" || method == "app.info";
+}
+
+}  // namespace
+
+bool IsTrustedUiContentBrowser(MeshHandler* owner,
+                               CefRefPtr<CefBrowser> browser) {
+  if (!owner || !browser || !owner->IsContentBrowser(browser)) {
+    return false;
+  }
+  auto frame = browser->GetMainFrame();
+  if (!frame) {
+    return false;
+  }
+  return PathUnderUiRoot(frame->GetURL().ToString());
+}
+
+bool IsTrustedSettingsContentBrowser(MeshHandler* owner,
+                                     CefRefPtr<CefBrowser> browser) {
+  if (!IsTrustedUiContentBrowser(owner, browser)) {
+    return false;
+  }
+  const std::string actual =
+      NormalizeFileUrlKey(browser->GetMainFrame()->GetURL().ToString());
+  std::error_code ec;
+  const auto expected = std::filesystem::weakly_canonical(
+      std::filesystem::path(utf8::Widen(paths::UiRootDir())) /
+          L"settings.html",
+      ec);
+  if (ec) {
+    return false;
+  }
+  std::string expected_key = utf8::Narrow(expected.wstring());
+  std::transform(expected_key.begin(), expected_key.end(), expected_key.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return actual == expected_key;
+}
+
+bool ApiAccessAllowed(const ApiContext& ctx) {
+  if (!ctx.owner || !ctx.browser) {
+    return false;
+  }
+  if (ctx.owner->IsDevToolsBrowser(ctx.browser)) {
+    return false;
+  }
+  if (ctx.owner->IsShellBrowser(ctx.browser) ||
+      ctx.owner->IsOverlayBrowser(ctx.browser)) {
+    return true;
+  }
+  if (ctx.owner->IsContentBrowser(ctx.browser)) {
+    if (IsTrustedSettingsContentBrowser(ctx.owner, ctx.browser) &&
+        (ctx.method == "browser.adblock.get" ||
+         ctx.method == "browser.adblock.set")) {
+      return true;
+    }
+    if (IsTrustedUiContentBrowser(ctx.owner, ctx.browser) &&
+        IsTrustedUiAllowedMethod(ctx.method)) {
+      return true;
+    }
+    return IsWebContentAllowedMethod(ctx.method);
+  }
+  return false;
+}
+
+}  // namespace mesh
