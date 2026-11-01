@@ -6,7 +6,7 @@ import sys
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshEngine.exe"))
+    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshBrowser.exe"))
     if not os.path.exists(exe_path):
         print(f"Executable not found at {exe_path}")
         sys.exit(1)

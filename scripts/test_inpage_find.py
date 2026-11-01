@@ -4,7 +4,7 @@ import json
 import os
 
 def main():
-    exe_path = os.path.abspath('build/native/Release/MeshEngine.exe')
+    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshBrowser.exe"))
     proc = subprocess.Popen([exe_path, '--mcp', '--mesh-private'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
 
     def send(method, params=None):
@@ -104,8 +104,7 @@ def main():
     res = send('tools/call', {'name': 'browser_eval_js', 'arguments': {'expression': js_code}})
     print('Evaluate result:', res)
     time.sleep(1)
-
-    target = r'C:\Users\Nicol\.gemini\antigravity-ide\brain\d2212c22-f2c9-415c-83df-cec16de82c3f\google_find_test.png'
+    target = os.path.join(os.path.dirname(__file__), "inpage_find_test.png")
     send('tools/call', {'name': 'browser_take_screenshot', 'arguments': {'savePath': target}})
     print('Saved google_find_test.png!')
     proc.terminate()

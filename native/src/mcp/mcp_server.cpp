@@ -44,7 +44,7 @@ namespace {
 /**
  * Canonical form of a resource URI.
  *
- * The engine shipped its MCP resources under "omni://" URIs. Those URIs are
+ * The engine shipped its MCP resources under "mesh://" URIs. Those URIs are
  * part of a published contract with existing clients, so they keep working.
  * The current names are "mesh://"; anything legacy is translated here so the
  * rest of the server only ever deals with the canonical URI.
@@ -54,9 +54,9 @@ std::string CanonicalResourceUri(const std::string& uri) {
     const char* legacy;
     const char* canonical;
   } kAliases[] = {
-      {"omni://tabs/active", "mesh://tabs/active"},
-      {"omni://tabs", "mesh://tabs"},
-      {"omni://history/recent", "mesh://history/recent"},
+      {"mesh://tabs/active", "mesh://tabs/active"},
+      {"mesh://tabs", "mesh://tabs"},
+      {"mesh://history/recent", "mesh://history/recent"},
   };
   for (const auto& alias : kAliases) {
     if (uri == alias.legacy) {
@@ -542,7 +542,7 @@ void McpServer::RegisterTools() {
 
   tools_["browser_status"] = {
       "browser_status",
-      "Whether the MeshEngine window is already open, MCP reachability, "
+      "Whether the MeshBrowser window is already open, MCP reachability, "
       "active tab, and connected agent sessions.",
       {{"type", "object"}, {"properties", Json::object()}}};
 
@@ -610,7 +610,7 @@ void McpServer::RegisterResources() {
   resources_["mesh://tabs"] = {
       "mesh://tabs",
       "Open Tabs List",
-      "List of all open tabs in Mesh Engine",
+      "List of all open tabs in MeshBrowser",
       "application/json"};
 
   resources_["mesh://history/recent"] = {
@@ -619,23 +619,23 @@ void McpServer::RegisterResources() {
       "Recently visited URLs and page titles",
       "application/json"};
 
-  // Legacy aliases: the "omni://" URIs were published by earlier builds and
+  // Legacy aliases: the "mesh://" URIs were published by earlier builds and
   // are still used by existing MCP clients. They resolve to the same
   // resources; removing them would break those clients.
-  resources_["omni://tabs/active"] = {
-      "omni://tabs/active",
+  resources_["mesh://tabs/active"] = {
+      "mesh://tabs/active",
       "Active Tab State & Content",
       "Snapshot of the current active browser tab with URL, title, and page details",
       "application/json"};
 
-  resources_["omni://tabs"] = {
-      "omni://tabs",
+  resources_["mesh://tabs"] = {
+      "mesh://tabs",
       "Open Tabs List",
-      "List of all open tabs in Mesh Engine",
+      "List of all open tabs in MeshBrowser",
       "application/json"};
 
-  resources_["omni://history/recent"] = {
-      "omni://history/recent",
+  resources_["mesh://history/recent"] = {
+      "mesh://history/recent",
       "Recent Browser History",
       "Recently visited URLs and page titles",
       "application/json"};
@@ -1497,7 +1497,7 @@ Json McpServer::ExecuteTool(const std::string& name, const Json& args) {
 }
 
 Json McpServer::ReadResource(const std::string& uri) {
-  // Legacy "omni://" URIs are accepted and served from the canonical
+  // Legacy "mesh://" URIs are accepted and served from the canonical
   // "mesh://" resources; the reply echoes the URI the client asked for.
   const std::string canonical = CanonicalResourceUri(uri);
   if (canonical == "mesh://tabs/active") {
@@ -1602,7 +1602,7 @@ Json McpServer::HandleJsonRpcRequest(const Json& req, const std::string& agent_i
             {"resources", Json::object()},
             {"prompts", Json::object()}}},
           {"serverInfo",
-           {{"name", "MeshEngine-MCP"}, {"version", "1.0.0"}}},
+           {{"name", "MeshBrowser-MCP"}, {"version", "1.0.0"}}},
           {"agentId", resolved_agent}}}};
   }
 

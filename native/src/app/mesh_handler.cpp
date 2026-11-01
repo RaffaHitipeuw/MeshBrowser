@@ -2601,7 +2601,7 @@ void MeshHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
 
   std::string display = title.ToString();
   if (paths::IsPrivateMode() &&
-      (display.empty() || display == "Mesh Engine")) {
+      (display.empty() || display == "MeshBrowser")) {
     display = "Mesh Private";
   }
   if (IsDevMode()) {

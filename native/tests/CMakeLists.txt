@@ -6,11 +6,11 @@
 #
 #   cmake -S native/tests -B build-tests
 #   cmake --build build-tests
-#   ./build-tests/mesh_engine_tests
+#   ./build-tests/mesh_browser_tests
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   cmake_minimum_required(VERSION 3.21)
-  project(MeshEngineTests LANGUAGES CXX)
+  project(MeshBrowserTests LANGUAGES CXX)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
@@ -29,7 +29,7 @@ set(MESH_ENGINE_TEST_SRCS
   test_product_identity.cpp
 )
 
-add_executable(mesh_engine_tests
+add_executable(mesh_browser_tests
   ${MESH_ENGINE_TEST_SRCS}
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/engine/engine_app_menu_anchor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/engine/engine_app_menu_dismissal.cpp
@@ -44,17 +44,18 @@ add_executable(mesh_engine_tests
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/platform/utf8.cpp
 )
 
-target_include_directories(mesh_engine_tests PRIVATE
+target_include_directories(mesh_browser_tests PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../include/engine"
 )
 
 # The native menu tracker uses the common-controls subclassing API on
 # Windows. It is not part of the default C++ libraries, so link it
 # explicitly there; other platforms need nothing extra.
 if(WIN32)
-  target_link_libraries(mesh_engine_tests PRIVATE comctl32)
+  target_link_libraries(mesh_browser_tests PRIVATE comctl32)
 endif()
 
 # Run the suite through ctest as well as directly.
 enable_testing()
-add_test(NAME mesh_engine_tests COMMAND mesh_engine_tests)
+add_test(NAME mesh_browser_tests COMMAND mesh_browser_tests)

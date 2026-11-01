@@ -89,7 +89,7 @@ void SendHttpResponse(SOCKET client,
     oss << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
     oss << "Vary: Origin\r\n";
     oss << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
-    oss << "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Omni-Agent\r\n";
+    oss << "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Mesh-Agent\r\n";
   }
   oss << "Connection: close\r\n\r\n";
   oss << body;
@@ -172,7 +172,7 @@ bool ProcessAlive(DWORD pid) {
 #endif
 }
 
-bool PathIsMeshEngine(const std::string& path) {
+bool PathIsMeshBrowser(const std::string& path) {
   if (path.empty()) {
     return false;
   }
@@ -180,19 +180,19 @@ bool PathIsMeshEngine(const std::string& path) {
   const std::string name =
       slash == std::string::npos ? path : path.substr(slash + 1);
 #if defined(_WIN32)
-  // "OmniBrowser.exe" is the previous product name; an instance of it may
+  // "MeshBrowser.exe" is the previous product name; an instance of it may
   // still be running, and the MCP host must be able to talk to it.
-  if (_stricmp(name.c_str(), "MeshEngine.exe") == 0 ||
-      _stricmp(name.c_str(), "OmniBrowser.exe") == 0) {
+  if (_stricmp(name.c_str(), "MeshBrowser.exe") == 0 ||
+      _stricmp(name.c_str(), "MeshBrowser.exe") == 0) {
     return true;
   }
   return false;
 #else
-  return name == "MeshEngine" || name == "OmniBrowser";
+  return name == "MeshBrowser" || name == "MeshBrowser";
 #endif
 }
 
-bool PidIsMeshEngine(DWORD pid) {
+bool PidIsMeshBrowser(DWORD pid) {
 #if defined(_WIN32)
   HANDLE proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
   if (!proc) {
@@ -202,7 +202,7 @@ bool PidIsMeshEngine(DWORD pid) {
   DWORD n = MAX_PATH;
   const BOOL ok = QueryFullProcessImageNameW(proc, 0, path, &n);
   CloseHandle(proc);
-  return ok && PathIsMeshEngine(utf8::Narrow(path));
+  return ok && PathIsMeshBrowser(utf8::Narrow(path));
 #else
   char buf[4096];
   const std::string link = "/proc/" + std::to_string(pid) + "/exe";
@@ -211,7 +211,7 @@ bool PidIsMeshEngine(DWORD pid) {
     return false;
   }
   buf[len] = '\0';
-  return PathIsMeshEngine(buf);
+  return PathIsMeshBrowser(buf);
 #endif
 }
 
@@ -244,7 +244,7 @@ BOOL CALLBACK FindMeshGuiWindowProc(HWND hwnd, LPARAM lparam) {
   if (pid == 0 || pid == state->skip_pid || pid == GetCurrentProcessId()) {
     return TRUE;
   }
-  if (!PidIsMeshEngine(pid)) {
+  if (!PidIsMeshBrowser(pid)) {
     return TRUE;
   }
   state->found_pid = pid;
@@ -334,7 +334,7 @@ bool GuiAlreadyOpen(DWORD* pid_out) {
   int port = 0;
   DWORD pid = 0;
   if (ReadEndpointFile(&port, &pid) && ProcessAlive(pid) &&
-      PidIsMeshEngine(pid)) {
+      PidIsMeshBrowser(pid)) {
     if (pid_out) {
       *pid_out = pid;
     }
@@ -430,7 +430,7 @@ void HandleClient(SOCKET client) {
       if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
     }
     if (lower.rfind("x-mesh-agent:", 0) == 0 ||
-        lower.rfind("x-omni-agent:", 0) == 0) {
+        lower.rfind("x-mesh-agent:", 0) == 0) {
       size_t colon = line.find(':');
       if (colon != std::string::npos) {
         agent_header = line.substr(colon + 1);
@@ -462,7 +462,7 @@ void HandleClient(SOCKET client) {
       headers += "Access-Control-Allow-Origin: " + origin_header + "\r\n";
       headers += "Vary: Origin\r\n";
       headers += "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
-      headers += "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Omni-Agent\r\n";
+      headers += "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Mesh-Agent\r\n";
     }
     headers += "Access-Control-Max-Age: 86400\r\nConnection: close\r\n\r\n";
     SendAll(client, headers);
@@ -507,7 +507,7 @@ void HandleClient(SOCKET client) {
     sse_hdr << "Connection: keep-alive\r\n";
     if (!origin_header.empty()) {
       sse_hdr << "Access-Control-Allow-Origin: " << origin_header << "\r\n";
-      sse_hdr << "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Omni-Agent\r\n";
+      sse_hdr << "Access-Control-Allow-Headers: Content-Type, Accept, X-Mesh-Agent, X-Mesh-Agent\r\n";
       sse_hdr << "Vary: Origin\r\n";
     }
     sse_hdr << "\r\n";
@@ -817,7 +817,7 @@ bool McpServer::IsHttpReachable(int port, int timeout_ms) {
     return GuiAlreadyOpen(nullptr);
   }
   const std::string raw(buf, buf + n);
-  if (raw.find("MeshEngine MCP") != std::string::npos ||
+  if (raw.find("MeshBrowser MCP") != std::string::npos ||
       raw.find("mcp-2024-11-05") != std::string::npos) {
     return true;
   }
@@ -880,10 +880,10 @@ void McpServer::TerminateStaleGuiProcesses() {
   if (Process32FirstW(snapshot, &entry)) {
     do {
       if (entry.th32ProcessID != current_pid &&
-          PathIsMeshEngine(utf8::Narrow(entry.szExeFile))) {
+          PathIsMeshBrowser(utf8::Narrow(entry.szExeFile))) {
         HANDLE proc = OpenProcess(PROCESS_TERMINATE, FALSE, entry.th32ProcessID);
         if (proc) {
-          Log("Terminating stale/headless MeshEngine process pid=" +
+          Log("Terminating stale/headless MeshBrowser process pid=" +
               std::to_string(entry.th32ProcessID));
           TerminateProcess(proc, 0);
           CloseHandle(proc);
@@ -911,7 +911,7 @@ std::string ReadRecentCrashFile() {
     return {};
   }
   const std::wstring crash_path =
-      std::wstring(appdata) + L"\\MeshEngine\\last_crash.txt";
+      std::wstring(appdata) + L"\\MeshBrowser\\last_crash.txt";
   WIN32_FILE_ATTRIBUTE_DATA attr{};
   if (GetFileAttributesExW(crash_path.c_str(), GetFileExInfoStandard, &attr)) {
     FILETIME now{};
@@ -1185,7 +1185,7 @@ HttpRpcResult HttpPostMcp(int port, const std::string& body,
   SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (s == INVALID_SOCKET) {
     out.winsock_error = WSAGetLastError();
-    out.error = "Could not create socket to MeshEngine MCP (" +
+    out.error = "Could not create socket to MeshBrowser MCP (" +
                 std::to_string(out.winsock_error) + ")";
     return out;
   }
@@ -1209,7 +1209,7 @@ HttpRpcResult HttpPostMcp(int port, const std::string& body,
   if (connect(s, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) ==
       SOCKET_ERROR) {
     out.winsock_error = WSAGetLastError();
-    out.error = "MeshEngine MCP is not reachable on 127.0.0.1:" +
+    out.error = "MeshBrowser MCP is not reachable on 127.0.0.1:" +
                 std::to_string(port) + " (WSA " +
                 std::to_string(out.winsock_error) +
                 "). The browser is closed or crashed.";
@@ -1257,7 +1257,7 @@ HttpRpcResult HttpPostMcp(int port, const std::string& body,
     if (ProcessExitedPid(pid, &exit_code)) {
 #endif
       closesocket(s);
-      out.error = "MeshEngine process exited during the tool call (PID " +
+      out.error = "MeshBrowser process exited during the tool call (PID " +
                   std::to_string(pid) + ", exit " + std::to_string(exit_code) +
                   "). This is a crash or forced close.";
       return out;
@@ -1289,9 +1289,9 @@ HttpRpcResult HttpPostMcp(int port, const std::string& body,
     out.winsock_error = recv_err;
     out.error =
         recv_err
-            ? ("MeshEngine closed the MCP connection during the call (WSA " +
+            ? ("MeshBrowser closed the MCP connection during the call (WSA " +
                std::to_string(recv_err) + "). The app likely crashed.")
-            : "MeshEngine returned an empty MCP HTTP response. The app may "
+            : "MeshBrowser returned an empty MCP HTTP response. The app may "
               "have crashed or been closed.";
     return out;
   }
@@ -1302,7 +1302,7 @@ HttpRpcResult HttpPostMcp(int port, const std::string& body,
     out.body.pop_back();
   }
   if (out.body.empty()) {
-    out.error = "MeshEngine returned an empty MCP body.";
+    out.error = "MeshBrowser returned an empty MCP body.";
     return out;
   }
   out.ok = true;
@@ -1338,7 +1338,7 @@ void LogAttachedGui(DWORD pid, int port) {
     return;
   }
   g_logged_attach = true;
-  Log("McpServer: attached to already-open MeshEngine GUI pid=" +
+  Log("McpServer: attached to already-open MeshBrowser GUI pid=" +
       std::to_string(static_cast<unsigned>(pid)) + " port=" +
       std::to_string(port));
 }
@@ -1360,7 +1360,7 @@ bool ConnectToBrowser(int* port, std::string* error) {
     }
     if (error) {
       *error =
-          "MeshEngine is already open (PID " +
+          "MeshBrowser is already open (PID " +
           std::to_string(static_cast<unsigned>(pid)) +
           ") but MCP is not reachable on 127.0.0.1:" + std::to_string(*port) +
           ". The window may still be starting.";
@@ -1369,7 +1369,7 @@ bool ConnectToBrowser(int* port, std::string* error) {
   }
   if (error) {
     *error =
-        "MeshEngine is not running. Start the app yourself, or have an "
+        "MeshBrowser is not running. Start the app yourself, or have an "
         "agent call a browser tool.";
   }
   return false;
@@ -1387,7 +1387,7 @@ bool EnsureBrowserForAgent(int* port, std::string* error) {
     }
     if (error) {
       *error =
-          "MeshEngine window is already open (PID " +
+          "MeshBrowser window is already open (PID " +
           std::to_string(static_cast<unsigned>(pid)) +
           ") but MCP did not come up on 127.0.0.1:" + std::to_string(*port) +
           " within 25s.";
@@ -1397,7 +1397,7 @@ bool EnsureBrowserForAgent(int* port, std::string* error) {
   if (!g_gui_launched) {
     if (!LaunchBrowserGui()) {
       if (error) {
-        *error = "Failed to start MeshEngine.exe";
+        *error = "Failed to start MeshBrowser.exe";
       }
       return false;
     }
@@ -1407,7 +1407,7 @@ bool EnsureBrowserForAgent(int* port, std::string* error) {
     return true;
   }
   if (error) {
-    *error = "MeshEngine MCP did not come up on 127.0.0.1:" +
+    *error = "MeshBrowser MCP did not come up on 127.0.0.1:" +
              std::to_string(*port) +
              " within 25s. The window may have crashed on startup.";
   }
@@ -1490,14 +1490,14 @@ int McpServer::RunStdioHost(int port) {
           LogAttachedGui(gui_pid, live_port);
         } else {
           ensure_error =
-              "MeshEngine is already open (PID " +
+              "MeshBrowser is already open (PID " +
               std::to_string(static_cast<unsigned>(gui_pid)) +
               ") but MCP is not reachable on 127.0.0.1:" +
               std::to_string(live_port) + ".";
         }
       } else if (g_http_seen && !GuiAlreadyOpen(nullptr)) {
         ensure_error =
-            "MeshEngine was running and then disappeared (crash or close). "
+            "MeshBrowser was running and then disappeared (crash or close). "
             "Not restarting it automatically. Start the app yourself.";
       } else {
         connected = EnsureBrowserForAgent(&live_port, &ensure_error);
@@ -1539,7 +1539,7 @@ int McpServer::RunStdioHost(int port) {
     if (!rpc.ok) {
       std::string err = rpc.error;
       if (gui_open || GuiAlreadyOpen(nullptr)) {
-        err = "MeshEngine is open but the MCP call failed. " + rpc.error;
+        err = "MeshBrowser is open but the MCP call failed. " + rpc.error;
       }
       if (method == "tools/call") {
         WriteStdoutLine(ToolErrorResult(id, err).dump());
@@ -1553,11 +1553,11 @@ int McpServer::RunStdioHost(int port) {
     if (proxied.is_discarded()) {
       if (method == "tools/call") {
         WriteStdoutLine(
-            ToolErrorResult(id, "MeshEngine returned invalid JSON: " + rpc.body)
+            ToolErrorResult(id, "MeshBrowser returned invalid JSON: " + rpc.body)
                 .dump());
       } else {
         WriteStdoutLine(
-            JsonRpcError(id, -32603, "Invalid JSON from MeshEngine").dump());
+            JsonRpcError(id, -32603, "Invalid JSON from MeshBrowser").dump());
       }
       continue;
     }

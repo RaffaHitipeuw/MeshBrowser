@@ -119,7 +119,7 @@ int RunMain(HINSTANCE hInstance, void* sandbox_info) {
   const int mcp_port = ParseMcpPort(command_line);
   const bool mcp_stdio = WantsMcpStdio(command_line);
 
-  // Cursor / Claude spawn MeshEngine.exe --mcp. This process is the MCP
+  // Cursor / Claude spawn MeshBrowser.exe --mcp. This process is the MCP
   // stdio host only — never CEF — so the agent keeps a stable pipe even
   // if the GUI crashes.
   if (mcp_stdio) {
@@ -136,7 +136,7 @@ int RunMain(HINSTANCE hInstance, void* sandbox_info) {
   HANDLE gui_mutex = CreateMutexW(nullptr, TRUE, mutex_name.c_str());
   const DWORD mutex_err = GetLastError();
   if (gui_mutex && mutex_err == ERROR_ALREADY_EXISTS) {
-    mesh::Log("MeshEngine GUI already running — focusing existing window");
+    mesh::Log("MeshBrowser GUI already running — focusing existing window");
     if (mesh::McpServer::FocusExistingGuiWindow()) {
       CloseHandle(gui_mutex);
       return 0;

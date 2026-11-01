@@ -90,7 +90,7 @@ const std::vector<std::string>& MigratableProfileDirs() {  static const std::vec
 
 std::string LegacySettingsKey(const std::string& key) {
   static const std::string kCurrentPrefix = "mesh.";
-  static const std::string kLegacyPrefix = "omni.";
+  static const std::string kLegacyPrefix = "mesh.";
   if (key.rfind(kCurrentPrefix, 0) != 0) {
     return std::string();
   }

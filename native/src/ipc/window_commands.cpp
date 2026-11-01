@@ -135,8 +135,8 @@ bool StartUpdateInstaller(const std::string& download_url,
   static constexpr wchar_t kInstallerScript[] = LR"PS(
 param([string]$DownloadUrl, [string]$ExpectedSha256, [string]$InstallDir, [string]$Executable, [int]$ProcessId, [string]$Self)
 $ErrorActionPreference = 'Stop'
-$work = Join-Path $env:TEMP ('MeshEngineUpdate-' + [guid]::NewGuid().ToString('N'))
-$log = Join-Path $env:TEMP 'MeshEngine-update.log'
+$work = Join-Path $env:TEMP ('MeshBrowserUpdate-' + [guid]::NewGuid().ToString('N'))
+$log = Join-Path $env:TEMP 'MeshBrowser-update.log'
 Set-Content -LiteralPath $log -Value ('Update started for ' + $Executable + ' from PID ' + $ProcessId)
 try {
   New-Item -ItemType Directory -Path $work -Force | Out-Null
@@ -151,23 +151,23 @@ try {
   Add-Content -LiteralPath $log -Value 'Checksum verified.'
   $unpacked = Join-Path $work 'unpacked'
   Expand-Archive -Path $zip -DestinationPath $unpacked -Force
-  if (-not (Test-Path (Join-Path $unpacked 'MeshEngine.exe'))) { throw 'The release archive does not contain MeshEngine.exe.' }
+  if (-not (Test-Path (Join-Path $unpacked 'MeshBrowser.exe'))) { throw 'The release archive does not contain MeshBrowser.exe.' }
   Add-Content -LiteralPath $log -Value 'Archive extracted.'
   $deadline = [DateTime]::UtcNow.AddMinutes(2)
   do {
-    $runningAppProcesses = @(Get-Process -Name 'MeshEngine' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -ieq $Executable })
+    $runningAppProcesses = @(Get-Process -Name 'MeshBrowser' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -ieq $Executable })
     if ($runningAppProcesses.Count -eq 0) { break }
-    if ([DateTime]::UtcNow -ge $deadline) { throw 'MeshEngine is still running; close all browser windows and try the update again.' }
+    if ([DateTime]::UtcNow -ge $deadline) { throw 'MeshBrowser is still running; close all browser windows and try the update again.' }
     Start-Sleep -Milliseconds 500
   } while ($true)
   Add-Content -LiteralPath $log -Value 'Browser processes stopped; installing files.'
   Copy-Item -Path (Join-Path $unpacked '*') -Destination $InstallDir -Recurse -Force
-  Add-Content -LiteralPath $log -Value 'Files installed; restarting MeshEngine.'
+  Add-Content -LiteralPath $log -Value 'Files installed; restarting MeshBrowser.'
   Start-Process -FilePath $Executable -WorkingDirectory $InstallDir
 } catch {
   Add-Content -LiteralPath $log -Value ('Update failed: ' + $_.Exception.ToString())
   Add-Type -AssemblyName PresentationFramework
-  [System.Windows.MessageBox]::Show(('MeshEngine could not install the update: ' + $_.Exception.Message), 'MeshEngine Update', 'OK', 'Error') | Out-Null
+  [System.Windows.MessageBox]::Show(('MeshBrowser could not install the update: ' + $_.Exception.Message), 'MeshBrowser Update', 'OK', 'Error') | Out-Null
   if (Test-Path $Executable) { Start-Process -FilePath $Executable -WorkingDirectory $InstallDir }
 } finally {
   Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
@@ -197,7 +197,7 @@ try {
       QuoteWindowsArgument(utf8::Widen(download_url)) + L" -ExpectedSha256 " +
       QuoteWindowsArgument(utf8::Widen(sha256)) + L" -InstallDir " +
       QuoteWindowsArgument(utf8::Widen(paths::ExecutableDir())) + L" -Executable " +
-      QuoteWindowsArgument(std::filesystem::path(utf8::Widen(paths::ExecutableDir())).append(L"MeshEngine.exe").wstring()) +
+      QuoteWindowsArgument(std::filesystem::path(utf8::Widen(paths::ExecutableDir())).append(L"MeshBrowser.exe").wstring()) +
       L" -ProcessId " + std::to_wstring(GetCurrentProcessId()) + L" -Self " +
       QuoteWindowsArgument(script_path.wstring());
   std::vector<wchar_t> command(powershell.begin(), powershell.end());
@@ -326,7 +326,7 @@ bool HandleWindowCommand(
   if (method == "app.info") {
     const bool private_mode = paths::IsPrivateMode();
     callback->Success(Json{{"devMode", IsDevMode()},
-                           {"name", private_mode ? "Mesh Private" : "Mesh Engine"},
+                           {"name", private_mode ? "Mesh Private" : "MeshBrowser"},
                            {"version", MESH_APP_VERSION},
                            {"private", private_mode}}
                           .dump());

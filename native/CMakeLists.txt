@@ -1,4 +1,4 @@
-set(MESH_TARGET MeshEngine)
+set(MESH_TARGET MeshBrowser)
 
 # Bake the repo UI path into the binary for live reload during development.
 file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/ui" MESH_UI_SOURCE_DIR)
@@ -112,7 +112,7 @@ set(MESH_SRCS
   src/mcp/mcp_server.cpp
   src/mcp/mcp_http_server.cpp
 
-  # Mesh Engine: product-agnostic browser mechanics.
+  # MeshBrowser: product-agnostic browser mechanics.
   src/engine/engine_app.cpp
   src/engine/engine_app_menu.cpp
   src/engine/engine_app_menu_anchor.cpp
@@ -142,6 +142,7 @@ add_dependencies(${MESH_TARGET} libcef_dll_wrapper mesh_adblock_ffi)
 
 target_include_directories(${MESH_TARGET} PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/engine"
   "${CMAKE_CURRENT_SOURCE_DIR}/adblock_ffi/include"
   "${CMAKE_SOURCE_DIR}/third_party"
   "${CMAKE_CURRENT_BINARY_DIR}/generated"

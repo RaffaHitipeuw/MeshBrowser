@@ -50,7 +50,7 @@ inline constexpr const char* kMigrationMarkerFile = ".legacy-profile-migrated";
 /**
  * The key a setting had in the previous product.
  *
- * Settings of the previous product were named after it ("omni.searchEngine");
+ * Settings of the previous product were named after it ("mesh.searchEngine");
  * they are now named after the current one ("mesh.searchEngine"). The old
  * name is returned so that a settings file written before the rename keeps
  * its values.

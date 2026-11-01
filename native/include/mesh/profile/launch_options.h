@@ -16,13 +16,13 @@ namespace mesh::profile {
 inline constexpr const char* kPrivateSwitch = "mesh-private";
 
 /** Switch of the previous product that opened the browser in private mode. */
-inline constexpr const char* kLegacyPrivateSwitch = "omni-private";
+inline constexpr const char* kLegacyPrivateSwitch = "mesh-private";
 
 /** Switch that selects the profile instance a process writes to. */
 inline constexpr const char* kInstanceSwitch = "mesh-instance";
 
 /** Switch of the previous product that selected the profile instance. */
-inline constexpr const char* kLegacyInstanceSwitch = "omni-instance";
+inline constexpr const char* kLegacyInstanceSwitch = "mesh-instance";
 
 /** The profile options a launch asks for. */
 struct LaunchOptions {

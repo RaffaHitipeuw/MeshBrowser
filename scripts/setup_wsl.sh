@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Installs Mesh Engine Linux build dependencies inside WSL (Ubuntu/Debian).
+# Installs MeshBrowser Linux build dependencies inside WSL (Ubuntu/Debian).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "Run this script inside WSL, not from Windows PowerShell." >&2
-  echo "  wsl -d Ubuntu -- bash -lc 'cd /mnt/c/Users/Nicol/Documents/Github/browser && bash scripts/setup_wsl.sh'" >&2
+  echo "  wsl -d Ubuntu -- bash -lc 'cd /path/to/MeshBrowser && bash scripts/setup_wsl.sh'" >&2
   exit 1
 fi
 

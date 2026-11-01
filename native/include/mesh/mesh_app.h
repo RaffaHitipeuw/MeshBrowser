@@ -6,6 +6,8 @@
 #include "engine/engine_client.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
+#include "include/cef_browser.h"
+#include "include/cef_v8.h"
 
 namespace mesh {
 
@@ -31,6 +33,9 @@ class MeshApp : public engine::EngineApp {
   void OnBeforeCommandLineProcessing(
       const CefString& process_type,
       CefRefPtr<CefCommandLine> command_line) override;
+  void OnContextCreated(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame,
+                        CefRefPtr<CefV8Context> context) override;
 
  protected:
   // ---- Product inputs ---------------------------------------------------

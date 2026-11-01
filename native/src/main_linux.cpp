@@ -122,7 +122,7 @@ int RunMain(int argc, char* argv[]) {
   ApplyProfileInstanceFromCommandLine(command_line);
 
   if (!TryAcquireGuiLock()) {
-    mesh::Log("MeshEngine GUI already running — not starting a second instance");
+    mesh::Log("MeshBrowser GUI already running — not starting a second instance");
     return 0;
   }
 

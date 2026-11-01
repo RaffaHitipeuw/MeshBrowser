@@ -26,10 +26,10 @@ MESH_TEST(ProductIdentity_TheLegacyDirectoryIsOnlyRead) {
   MESH_CHECK_NE(std::string(mesh::product::kDataDirName),
                 std::string(mesh::product::kLegacyDataDirName));
   MESH_CHECK_EQ(std::string(mesh::product::kLegacyDataDirName),
-                std::string("OmniBrowser"));
+                std::string("Mesh"));
 }
 
 MESH_TEST(ProductIdentity_TheProductHasAName) {
   MESH_CHECK_EQ(std::string(mesh::product::kName),
-                std::string("Mesh Engine"));
+                std::string("MeshBrowser"));
 }

@@ -24,10 +24,10 @@ namespace {
 
 inline std::string LogDirUtf8() {
   if (const char* xdg = std::getenv("XDG_DATA_HOME"); xdg && xdg[0]) {
-    return std::string(xdg) + "/MeshEngine";
+    return std::string(xdg) + "/MeshBrowser";
   }
   if (const char* home = std::getenv("HOME"); home && home[0]) {
-    return std::string(home) + "/.local/share/MeshEngine";
+    return std::string(home) + "/.local/share/MeshBrowser";
   }
   return {};
 }
@@ -53,7 +53,7 @@ inline void Log(const std::string& msg) {
   if (GetEnvironmentVariableW(L"APPDATA", appdata, MAX_PATH) == 0) {
     return;
   }
-  std::wstring dir = std::wstring(appdata) + L"\\MeshEngine";
+  std::wstring dir = std::wstring(appdata) + L"\\MeshBrowser";
   CreateDirectoryW(dir.c_str(), nullptr);
   const std::wstring path = dir + L"\\mesh.log";
   FILE* fp = nullptr;
@@ -91,7 +91,7 @@ inline void LogCrash(const std::string& msg) {
     return;
   }
   const std::wstring path =
-      std::wstring(appdata) + L"\\MeshEngine\\last_crash.txt";
+      std::wstring(appdata) + L"\\MeshBrowser\\last_crash.txt";
   FILE* fp = nullptr;
   if (_wfopen_s(&fp, path.c_str(), L"w") == 0 && fp) {
     std::fprintf(fp, "%s\n", msg.c_str());

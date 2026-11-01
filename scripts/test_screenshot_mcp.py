@@ -5,7 +5,7 @@ import sys
 import time
 
 def test_screenshot():
-    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshEngine.exe"))
+    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshBrowser.exe"))
     proc = subprocess.Popen(
         [exe_path, "--mcp", "--mesh-private"],
         stdin=subprocess.PIPE,

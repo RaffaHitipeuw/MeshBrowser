@@ -18,7 +18,7 @@ public class Win32 {
 }
 "@
 
-$proc = Get-Process Mesh Engine -ErrorAction Stop | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+$proc = Get-Process MeshBrowser -ErrorAction Stop | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
 if (-not $proc) { Write-Error "no window"; exit 1 }
 [Win32]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
 Start-Sleep -Milliseconds 400

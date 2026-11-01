@@ -70,7 +70,7 @@ MESH_TEST(ProfilePaths_CacheRootFollowsTheInstance) {
 
 MESH_TEST(ProfilePaths_TheProductDirectoryHasItsOwnName) {
   MESH_CHECK_EQ(std::string(mesh::profile::kProductDirName),
-                std::string("MeshEngine"));
+                std::string("MeshBrowser"));
   MESH_CHECK_NE(std::string(mesh::profile::kProductDirName),
                 std::string(mesh::profile::kLegacyProductDirName));
 }

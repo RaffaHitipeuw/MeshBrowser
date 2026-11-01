@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DOM contract test for the Mesh Engine UI.
+"""DOM contract test for the MeshBrowser UI.
 
 The React migration (Phase 8) must not change the DOM contract of the UI: the
 stylesheets target the class names, the native host derives its behaviour from
@@ -397,8 +397,8 @@ def find_exe() -> Path | None:
     env = os.environ.get("MESH_BROWSER_EXE", "")
     candidates = [
         Path(env) if env else None,
-        REPO_ROOT / "build" / "native" / "Release" / "MeshEngine.exe",
-        REPO_ROOT / "build" / "native" / "Debug" / "MeshEngine.exe",
+        REPO_ROOT / "build" / "native" / "Release" / "MeshBrowser.exe",
+        REPO_ROOT / "build" / "native" / "Debug" / "MeshBrowser.exe",
     ]
     for candidate in candidates:
         if candidate and candidate.is_file():
@@ -464,7 +464,7 @@ def tool_text(result: dict) -> str:
 def run_live() -> int:
     exe = find_exe()
     if not exe:
-        print("[live] MeshEngine.exe not found - skipping the live contract")
+        print("[live] MeshBrowser.exe not found - skipping the live contract")
         print("      (build it with: cmake --build build --config Release)")
         return 0
 

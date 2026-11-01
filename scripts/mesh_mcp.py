@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Cursor-friendly Mesh Engine MCP stdio adapter.
+"""Cursor-friendly MeshBrowser MCP stdio adapter.
 
-Cursor spawns this process (not MeshEngine.exe). The adapter answers
-initialize immediately, starts Mesh Engine if needed, and proxies JSON-RPC
+Cursor spawns this process (not MeshBrowser.exe). The adapter answers
+initialize immediately, starts MeshBrowser if needed, and proxies JSON-RPC
 to the native HTTP MCP server at 127.0.0.1:8999.
 """
 
@@ -26,9 +26,7 @@ def _env(*names: str, default: str = "") -> str:
     return default
 
 
-# The variables of the previous product are still read, so that a shell that
-# was set up for it keeps working.
-DEFAULT_PORT = int(_env("MESH_MCP_PORT", "OMNI_MCP_PORT", default="8999"))
+DEFAULT_PORT = int(_env("MESH_MCP_PORT", default="8999"))
 AGENT_ID = f"cursor-{os.getpid()}"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -39,15 +37,15 @@ def log(msg: str) -> None:
 
 
 def find_exe() -> Path | None:
-    env = _env("MESH_BROWSER_EXE", "OMNI_BROWSER_EXE")
+    env = _env("MESH_BROWSER_EXE")
     candidates = []
     if env:
         candidates.append(Path(env))
     candidates.extend(
         [
-            REPO_ROOT / "build" / "native" / "Release" / "MeshEngine.exe",
-            REPO_ROOT / "build" / "native" / "Debug" / "MeshEngine.exe",
-            Path(sys.executable).resolve().parent / "MeshEngine.exe",
+            REPO_ROOT / "build" / "native" / "Release" / "MeshBrowser.exe",
+            REPO_ROOT / "build" / "native" / "Debug" / "MeshBrowser.exe",
+            Path(sys.executable).resolve().parent / "MeshBrowser.exe",
         ]
     )
     for path in candidates:
@@ -81,8 +79,8 @@ def start_browser() -> None:
     exe = find_exe()
     if exe is None:
         raise FileNotFoundError(
-            "MeshEngine.exe not found. Build it first "
-            "(cmake --build build --target MeshEngine --config Release) "
+            "MeshBrowser.exe not found. Build it first "
+            "(cmake --build build --target MeshBrowser --config Release) "
             "or set MESH_BROWSER_EXE."
         )
     flags = 0
@@ -111,7 +109,7 @@ def ensure_browser(timeout_sec: float = 25.0) -> None:
             return
         time.sleep(0.25)
     raise TimeoutError(
-        f"Mesh Engine MCP did not come up on 127.0.0.1:{DEFAULT_PORT} within {int(timeout_sec)}s"
+        f"MeshBrowser MCP did not come up on 127.0.0.1:{DEFAULT_PORT} within {int(timeout_sec)}s"
     )
 
 
@@ -144,7 +142,7 @@ def local_initialize(req: dict) -> dict:
                 "resources": {},
                 "prompts": {},
             },
-            "serverInfo": {"name": "MeshEngine-MCP", "version": "1.0.0"},
+            "serverInfo": {"name": "MeshBrowser-MCP", "version": "1.0.0"},
             "agentId": AGENT_ID,
         },
     }
@@ -210,7 +208,7 @@ def main() -> int:
                         "id": req_id,
                         "error": {
                             "code": -32000,
-                            "message": "Mesh Engine is not running",
+                            "message": "MeshBrowser is not running",
                         },
                     }
                 )
@@ -221,7 +219,7 @@ def main() -> int:
                 ensure_browser()
             elif not http_alive():
                 raise TimeoutError(
-                    "Mesh Engine is not running. Start the app yourself, "
+                    "MeshBrowser is not running. Start the app yourself, "
                     "or have an agent call a browser tool."
                 )
             resp = http_rpc(line)

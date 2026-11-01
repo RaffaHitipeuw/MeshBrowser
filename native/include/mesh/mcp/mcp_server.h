@@ -58,7 +58,7 @@ class McpServer {
   // Named mutex held by the GUI process so --mcp agents can see it
   // even before 127.0.0.1:8999 is listening. A second GUI must never
   // call CefInitialize with the same profile (Chromium CHECK / 0xC0000409).
-  static constexpr wchar_t kGuiMutexName[] = L"Local\\MeshEngine.GuiRunning";
+  static constexpr wchar_t kGuiMutexName[] = L"Local\\MeshBrowser.GuiRunning";
   static bool FocusExistingGuiWindow();
   static void TerminateStaleGuiProcesses();
 #endif

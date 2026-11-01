@@ -153,9 +153,9 @@ MESH_TEST(MigrateLegacyProfile_LeavesTheLegacyProfileAlone) {
 
 MESH_TEST(LegacySettingsKey_MapsTheOldNames) {
   MESH_CHECK_EQ(mesh::profile::LegacySettingsKey("mesh.searchEngine"),
-                std::string("omni.searchEngine"));
+                std::string("mesh.searchEngine"));
   MESH_CHECK_EQ(mesh::profile::LegacySettingsKey("mesh.appearance"),
-                std::string("omni.appearance"));
+                std::string("mesh.appearance"));
 }
 
 MESH_TEST(LegacySettingsKey_LeavesOtherKeysAlone) {

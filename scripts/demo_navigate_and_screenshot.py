@@ -5,10 +5,10 @@ import sys
 import time
 
 def main():
-    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshEngine.exe"))
-    target_screenshot = r"C:\Users\Nicol\.gemini\antigravity-ide\brain\d2212c22-f2c9-415c-83df-cec16de82c3f\wiki_screenshot.png"
+    exe_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "build", "native", "Release", "MeshBrowser.exe"))
+    target_screenshot = os.path.join(os.path.dirname(__file__), "wiki_screenshot.png")
     
-    print(f"Connecting to Mesh Engine MCP at {exe_path}...")
+    print(f"Connecting to MeshBrowser MCP at {exe_path}...")
     proc = subprocess.Popen(
         [exe_path, "--mcp", "--mesh-private"],
         stdin=subprocess.PIPE,
